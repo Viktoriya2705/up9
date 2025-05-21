@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Калькулятор клининга</title>
+<style>
+  :root {
+    --primary: #2a9d8f;
+    --secondary: #264653;
+    --background: #f4f4f9;
+    --accent: #e76f51;
+    --text-dark: #222;
+    --text-light: #fff;
+    --radius: 8px;
+    --transition: 0.3s ease;
+  }
+  * {
+    box-sizing: border-box;
+  }
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: var(--background);
+    margin: 0;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem;
+  }
+  .calculator {
+    background: var(--text-light);
+    border-radius: var(--radius);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    max-width: 480px;
+    width: 100%;
+    padding: 2rem 2.5rem;
+    color: var(--secondary);
+  }
+  .calculator h1 {
+    text-align: center;
+    margin-bottom: 1.5rem;
+    color: var(--primary);
+    font-weight: 700;
+  }
+  .form-group {
+    margin-bottom: 1.25rem;
+  }
+  label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.3rem;
+  }
+  input[type="number"],
+  select {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    font-size: 1rem;
+    border: 2px solid #ccc;
+    border-radius: var(--radius);
+    transition: border-color var(--transition);
+  }
+  input[type="number"]:focus,
+  select:focus {
+    border-color: var(--primary);
+    outline: none;
+  }
+  .checkbox-group {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-top: 0.5rem;
+  }
+  .checkbox-group label {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-weight: 500;
+  }
+  button {
+    width: 100%;
+    background: var(--primary);
+    border: none;
+    padding: 0.75rem 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text-light);
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: background-color var(--transition);
+  }
+  button:hover {
+    background: var(--accent);
+  }
+  .result {
+    margin-top: 1.5rem;
+    background: #e0f2f1;
+    padding: 1rem 1.25rem;
+    border-radius: var(--radius);
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--secondary);
+    min-height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .footer {
+    margin-top: 2rem;
+    font-size: 0.85rem;
+    color: #888;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+  <main class="calculator" role="main" aria-label="Калькулятор расчёта стоимости клининга">
+    <h1>Калькулятор клининга</h1>
+    <form id="cleaning-form" novalidate>
+      <div class="form-group">
+        <label for="area">Площадь помещения (м²)</label>
+        <input type="number" id="area" name="area" min="10" max="1000" step="1" required aria-describedby="areaHelp" placeholder="Например, 50" />
+      </div>
+      <div class="form-group">
+        <label for="cleaning-type">Тип клининга</label>
+        <select id="cleaning-type" name="cleaning-type" required aria-describedby="typeHelp">
+          <option value="" disabled selected>Выберите тип</option>
+          <option value="regular">Регулярная уборка</option>
+          <option value="general">Генеральная уборка</option>
+          <option value="afterRepair">Уборка после ремонта</option>
+          <option value="office">Уборка офиса</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Дополнительные услуги</label>
+        <div class="checkbox-group" role="group" aria-label="Дополнительные услуги">
+          <label><input type="checkbox" name="services" value="windows" /> Мытьё окон</label>
+          <label><input type="checkbox" name="services" value="balcony" /> Уборка балкона</label>
+          <label><input type="checkbox" name="services" value="fridge" /> Чистка холодильника</label>
+          <label><input type="checkbox" name="services" value="oven" /> Чистка духовки</label>
+          <label><input type="checkbox" name="services" value="carpet" /> Чистка ковров</label>
+        </div>
+      </div>
+      <div class="form-group">
+        <label for="urgency">Срочность выполнения</label>
+        <select id="urgency" name="urgency" required aria-describedby="urgencyHelp">
+          <option value="standard" selected>Стандартный срок (3 дня)</option>
+          <option value="express">Экспресс (1 день, +30%)</option>
+          <option value="sameDay">В тот же день (+50%)</option>
+        </select>
+      </div>
+      <button type="submit" aria-label="Рассчитать стоимость клининга">Рассчитать</button>
+    </form>
+    <div class="result" role="region" aria-live="polite" aria-atomic="true" id="result" tabindex="0"></div>
+    <div class="footer">© 2024 Клининговые услуги</div>
+  </main>
+
+<script>
+(() => {
+  const form = document.getElementById('cleaning-form');
+  const resultEl = document.getElementById('result');
+
+  // Базовые цены за м² в рублях в зависимости от типа уборки
+  const baseRates = {
+    regular: 100,
+    general: 180,
+    afterRepair: 250,
+    office: 150
+  };
+
+  // Дополнительные услуги и их фиксированная цена (руб)
+  const extraServicesPrices = {
+    windows: 1500,
+    balcony: 1200,
+    fridge: 800,
+    oven: 700,
+    carpet: 2000
+  };
+
+  // Коэффициенты срочности (увеличение стоимости)
+  const urgencyMultiplier = {
+    standard: 1,
+    express: 1.3,
+    sameDay: 1.5
+  };
+
+  // Валидация и расчет стоимости
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    resultEl.textContent = '';
+    const area = parseFloat(form.area.value);
+    const cleaningType = form['cleaning-type'].value;
+    const urgency = form.urgency.value;
+    const services = [...form.querySelectorAll('input[name="services"]:checked')].map(s => s.value);
+
+    // Валидация площади
+    if (isNaN(area) || area < 10 || area > 1000) {
+      resultEl.textContent = 'Пожалуйста, введите корректную площадь от 10 до 1000 м².';
+      resultEl.focus();
+      return;
+    }
+    // Валидация типа уборки
+    if (!cleaningType || !baseRates.hasOwnProperty(cleaningType)) {
+      resultEl.textContent = 'Пожалуйста, выберите тип клининга.';
+      resultEl.focus();
+      return;
+    }
+    // Валидация срочности
+    if (!urgency || !urgencyMultiplier.hasOwnProperty(urgency)) {
+      resultEl.textContent = 'Пожалуйста, выберите срочность выполнения.';
+      resultEl.focus();
+      return;
+    }
+
+    // Расчет базовой стоимости
+    let cost = baseRates[cleaningType] * area;
+
+    // Добавляем стоимость дополнительных услуг
+    let extrasCost = 0;
+    for (const svc of services) {
+      if (extraServicesPrices[svc]) extrasCost += extraServicesPrices[svc];
+    }
+    cost += extrasCost;
+
+    // Учитываем срочность
+    cost *= urgencyMultiplier[urgency];
+
+    // Округляем до рублей
+    cost = Math.round(cost);
+
+    // Формируем детализированное сообщение результата
+    const baseCostStr = (baseRates[cleaningType] * area).toLocaleString('ru-RU') + ' ₽';
+    const extrasCostStr = extrasCost > 0 ? extrasCost.toLocaleString('ru-RU') + ' ₽' : 'отсутствуют';
+    const multiplierStr = urgencyMultiplier[urgency];
+    const urgencyStr = {
+      standard: 'Стандартный срок',
+      express: 'Экспресс (+30%)',
+      sameDay: 'В тот же день (+50%)'
+    }[urgency];
+
+    resultEl.innerHTML = `
+      Итоговая стоимость: <strong>${cost.toLocaleString('ru-RU')} ₽</strong><br/>
+      <small>Базовая стоимость (${cleaningType.replace(/([A-Z])/g, ' $1').toLowerCase()}): ${baseCostStr}</small><br/>
+      <small>Дополнительные услуги: ${extrasCostStr}</small><br/>
+      <small>Срочность: ${urgencyStr} (×${multiplierStr})</small>
+    `;
+    resultEl.focus();
+  });
+})();
+</script>
+</body>
+</html>

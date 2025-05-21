@@ -1,0 +1,189 @@
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Расчет стоимости клининга Loan</title>
+<style>
+  body {
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    background: #f5f7fa;
+    margin: 0;
+    padding: 2rem;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    min-height: 100vh;
+  }
+  .container {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 15px rgb(0 0 0 / 0.1);
+    padding: 2rem 3rem;
+    max-width: 420px;
+    width: 100%;
+  }
+  h1 {
+    margin-bottom: 1.5rem;
+    font-weight: 700;
+    font-size: 1.75rem;
+    color: #222;
+    text-align: center;
+  }
+  label {
+    display: block;
+    margin-bottom: 0.25rem;
+    font-weight: 600;
+    color: #444;
+  }
+  input[type="number"],
+  select {
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    font-size: 1rem;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    margin-bottom: 1rem;
+    box-sizing: border-box;
+    transition: border-color 0.3s ease;
+  }
+  input[type="number"]:focus,
+  select:focus {
+    outline: none;
+    border-color: #4a90e2;
+    box-shadow: 0 0 5px rgba(74,144,226,0.5);
+  }
+  button {
+    width: 100%;
+    padding: 0.75rem;
+    background-color: #4a90e2;
+    border: none;
+    border-radius: 4px;
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  button:hover {
+    background-color: #357abd;
+  }
+  .result {
+    margin-top: 1.5rem;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #222;
+    text-align: center;
+    min-height: 2rem;
+  }
+  .footnote {
+    margin-top: 1rem;
+    font-size: 0.875rem;
+    color: #666;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+  <div class="container" role="main" aria-label="Калькулятор стоимости клининга Loan">
+    <h1>Расчет стоимости клининга Loan</h1>
+    <form id="cleaningForm" aria-describedby="footnote">
+      <label for="area">Площадь (м²):</label>
+      <input type="number" id="area" name="area" min="1" step="0.1" required aria-required="true" aria-label="Введите площадь в квадратных метрах" placeholder="Например, 50" />
+
+      <label for="cleaningType">Тип клининга:</label>
+      <select id="cleaningType" name="cleaningType" required aria-required="true" aria-label="Выберите тип клининга">
+        <option value="" disabled selected>Выберите...</option>
+        <option value="standard">Стандартная уборка</option>
+        <option value="deep">Глубокая уборка</option>
+        <option value="postconstruction">После ремонта</option>
+        <option value="office">Уборка офиса</option>
+      </select>
+
+      <label for="urgency">Срочность выполнения:</label>
+      <select id="urgency" name="urgency" required aria-required="true" aria-label="Выберите срочность уборки">
+        <option value="" disabled selected>Выберите...</option>
+        <option value="standard">Стандарт (3 дня)</option>
+        <option value="express">Экспресс (1 день +20%)</option>
+      </select>
+
+      <button type="submit" aria-label="Рассчитать стоимость клининга">Рассчитать</button>
+    </form>
+
+    <div class="result" id="result" role="region" aria-live="polite" aria-atomic="true"></div>
+    <div class="footnote" id="footnote">
+      * Цена указана в российских рублях (₽)
+    </div>
+  </div>
+
+<script>
+  // Базовые тарифы за квадратный метр для каждого типа уборки (в ₽)
+  const baseRates = {
+    standard: 150,
+    deep: 250,
+    postconstruction: 350,
+    office: 200
+  };
+
+  // Коэффициенты для срочности
+  const urgencyMultiplier = {
+    standard: 1,
+    express: 1.2
+  };
+
+  // Функция форматирования числа в денежный формат ₽ с пробелами
+  function formatRUB(amount) {
+    return amount.toLocaleString('ru-RU', { style: 'currency', currency: 'RUB', minimumFractionDigits: 0 });
+  }
+
+  // Основная функция расчета стоимости
+  function calculateCleaningCost(area, cleaningType, urgency) {
+    const rate = baseRates[cleaningType];
+    const multiplier = urgencyMultiplier[urgency];
+    if (!rate || !multiplier || area <= 0) return null;
+
+    // Расчет стоимости
+    const cost = area * rate * multiplier;
+    return cost;
+  }
+
+  // Обработка формы
+  document.getElementById('cleaningForm').addEventListener('submit', function(event) {
+    event.preventDefault();
+
+    const areaInput = parseFloat(this.area.value);
+    const cleaningType = this.cleaningType.value;
+    const urgency = this.urgency.value;
+
+    // Валидация
+    if (isNaN(areaInput) || areaInput <= 0) {
+      showResult('Пожалуйста, введите корректную площадь.');
+      return;
+    }
+    if (!cleaningType) {
+      showResult('Пожалуйста, выберите тип клининга.');
+      return;
+    }
+    if (!urgency) {
+      showResult('Пожалуйста, выберите срочность выполнения.');
+      return;
+    }
+
+    const totalCost = calculateCleaningCost(areaInput, cleaningType, urgency);
+    if (totalCost === null) {
+      showResult('Ошибка при расчете стоимости.');
+      return;
+    }
+
+    showResult(`Стоимость клининга Loan: <strong>${formatRUB(totalCost)}</strong>`);
+  });
+
+  // Вывод результата
+  function showResult(message) {
+    const resultEl = document.getElementById('result');
+    resultEl.innerHTML = message;
+  }
+</script>
+</body>
+</html>
